@@ -1,0 +1,35 @@
+body {
+  font-family: helvetica, arial, sans-serif;
+}
+
+.spreadsheet {
+  width: 100%;
+  overflow-x: scroll;
+}
+
+.row {
+  white-space: nowrap;
+  height: 1.8rem;
+}
+
+.header {
+  background-color: #666;
+  color: #eee
+}
+
+.cell {
+  display: inline-block;
+  width: 9rem;
+  border-style: solid;
+  border-width: 1px;
+  padding: 4px;
+}
+
+.cell .textInput{
+  background-color: #eee;
+}
+
+.cell .textInput:focus{
+  outline: none;
+}
+

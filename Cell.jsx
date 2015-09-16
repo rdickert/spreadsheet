@@ -1,15 +1,25 @@
 Cell = React.createClass({
   propTypes: {
-    cell: React.PropTypes.object.isRequired
+    // cell: React.PropTypes.object.isRequired
   },
 
   getInitialState () {
     return {
-      cellText: this.props.cell.text
+      cellText: this.props.text
     };
   },
 
   evalCell (text) {
+    // Try to run the cell as a js expression, and call it if
+    // it evaluates to a function.
+
+    // by default, set result as regular text
+    let result = text || this.props.text;
+
+    // Exit if cell is empty
+    const EMPTY_CELL = <span>&nbsp;</span>;
+    if (result.trim() === "") return EMPTY_CELL;
+
     // These expressions cause infinite recursion
     const top = "top";
     const window = "window";
@@ -20,8 +30,6 @@ Cell = React.createClass({
       return cellData && this.evalCell(cellData.text);
     };
 
-    // by default, set result as regular text
-    let result = text || this.props.cell.text;
     try {
       // eval expression & replace result if no error
       result = eval(`(${result})`);
@@ -38,17 +46,17 @@ Cell = React.createClass({
     if (result === undefined ||
         result === null ||
         result === "") {
-      result = <span>&nbsp;</span>;
+      result = EMPTY_CELL;
     }
     if (typeof result === "function" ) {
       // function must have thrown an error, so let's display the text
-      result = text || this.props.cell.text;
+      result = text || this.props.text;
     }
     return result;
   },
 
   setSelection (event) {
-    this.props.setSelection(this.props.cell._id);
+    this.props.setSelection(this.props.id);
     event.stopPropagation();
   },
 
@@ -62,6 +70,10 @@ Cell = React.createClass({
       case 13:
         this.updateCellText();
         break;
+      case 27:
+        this.setState({cellText: this.props.text});
+        this.props.setSelection("");
+        break;
       default:
         break;
     }
@@ -69,7 +81,7 @@ Cell = React.createClass({
 
   updateCellText () {
     const text = React.findDOMNode(this.refs.textInput).value.trim();
-    Cells.update(this.props.cell._id, {$set: {text: text.trim()}});
+    Cells.update(this.props.id, {$set: {text: text.trim()}});
     this.props.setSelection("");
   },
 
@@ -78,7 +90,18 @@ Cell = React.createClass({
       React.findDOMNode(this.refs.textInput).focus();
   },
 
-  renderOutput () {
+  shouldComponentUpdate (nextProps, nextState) {
+    // console.log(this.props.selected, nextProps.selected);
+    // console.log(this.props.selected)
+    return (
+         (this.props.selected !== nextProps.selected)
+      || (this.props.text !== nextProps.text)
+      || (this.state.cellText !== nextState.cellText)
+    );
+  },
+
+
+  renderResult () {
     return (
       <span className="cell" onClick={this.setSelection}>
         {this.evalCell()}
@@ -86,7 +109,7 @@ Cell = React.createClass({
     );
   },
 
-  renderInput () {
+  renderFormula () {
     let cellText = this.state.cellText;
     return (
       <span className="cell selected" onClick={(e) => e.stopPropagation()}>
@@ -104,6 +127,6 @@ Cell = React.createClass({
   },
 
   render() {
-    return this.props.selected ? this.renderInput() : this.renderOutput();
+    return this.props.selected ? this.renderFormula() : this.renderResult();
   }
 });

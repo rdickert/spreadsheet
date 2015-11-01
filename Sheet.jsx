@@ -4,23 +4,11 @@ Sheet = React.createClass({
   getMeteorData() {
     const totalRows =
       Cells.findOne({}, {sort: {row: -1}, limit: 1}).row + 1 || 0;
-    const maxColumns =
+    const totalColumns =
       Cells.findOne({}, {sort: {col: -1}, limit: 1}).col + 1 || 0;
-    const getRow = (rowNumber) => Cells.find({row: rowNumber}).fetch();
-    const rows = () => {
-      let result = [];
-      for (let rowNumber = 0; rowNumber < totalRows; rowNumber++) {
-        result.push({
-          row: getRow(rowNumber),
-          rowNumber
-        });
-      }
-      return result;
-    };
-
     return {
-      rows: rows(),
-      maxColumns
+      totalColumns,
+      totalRows
     };
   },
   propTypes: {
@@ -33,8 +21,9 @@ Sheet = React.createClass({
     };
   },
 
-  setSelection (id) {
-    this.setState({selectedCell: id});
+  setSelection (cell) {
+    const key = `cell (${cell.col}, ${cell.row})`;
+    this.setState({selectedCell: key});
   },
 
   clearSelection () {
@@ -43,45 +32,53 @@ Sheet = React.createClass({
 
   renderColumnHeads() {
     // generate numbered column heads
-    return (Array.from({length: this.data.maxColumns}).map((x, i) => {
-      return <div className="cell header" key={`Col ${i}`}>Column {i}</div>;
-    }));
+    return (Array.from({length: this.data.totalColumns})
+      .map((x, columnNumber) => {
+        return (
+          <div className="cell header" key={`col-${columnNumber}`}>
+            Column {columnNumber}
+          </div>
+        );
+      }));
   },
 
-
-  renderCells (row) {
+  renderCells(row) {
     // console.log(row)
-    return row.map((cell) =>
+    return Array.from({length: this.data.totalColumns}).map((x, col) => {
+      // const coordinates = {col, row};
+      const key = `cell (${col}, ${row})`;
+      return (
         <Cell
-          key={cell._id}
-          id={cell._id}
-          row={cell.row}
-          col={cell.col}
-          text={cell.text}
-          selected={this.state.selectedCell === cell._id}
-          setSelection={this.setSelection} />
-    );
+          key={key}
+          row={row}
+          col={col}
+          selected={this.state.selectedCell === key}
+          setSelection={this.setSelection}
+          clearSelection={this.clearSelection}
+        />
+      );
+    });
   },
 
 
   renderRows() {
-    return this.data.rows.map(({row, rowNumber}) => {
+    return (Array.from({length: this.data.totalRows}).map((x, rowNumber) => {
       return (
-        <div className="row">
-          <div className="cell header" ref={`Row ${rowNumber}`}>
+        <div className="row" key={`row-${rowNumber}`}>
+          <div className="cell header" key={`rowHeadFor-${rowNumber}`}>
             Row {rowNumber}
           </div>
-          {this.renderCells(row)}
+          {this.renderCells(rowNumber)}
         </div>
       );
-    });
+    }));
   },
 
   render() {
     return (
       <div className="Spreadsheet">
         <div className="row header">
-          <div className="cell header" ref="origin cell">&nbsp;</div>
+          <div className="cell header" ref="originCell">&nbsp;</div>
           {this.renderColumnHeads()}
         </div>
         {this.renderRows()}

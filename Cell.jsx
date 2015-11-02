@@ -79,7 +79,12 @@ Cell = React.createClass({
   },
 
   updateResult (result) {
-    Cells.update(this.data._id, {$set: {result}});
+    // Don't update the result if it hasn't changed. Besides
+    // being obvious, failure to do this creates a race condition
+    // with the data mixin on load, especially refresh.
+    if (result !== this.data.result) {
+      Cells.update(this.data._id, {$set: {result}});
+    }
   },
 
   componentWillMount () {

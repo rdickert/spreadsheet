@@ -2,6 +2,12 @@ Sheet = React.createClass({
   mixins: [ReactMeteorData],
 
   getMeteorData() {
+    if (! Cells.findOne()){
+      return {
+        totalColumns: 20,
+        totalRows: 20
+      }
+    }
     const totalRows =
       Cells.findOne({}, {sort: {row: -1}, limit: 1}).row + 1 || 0;
     const totalColumns =
@@ -35,8 +41,10 @@ Sheet = React.createClass({
     return (Array.from({length: this.data.totalColumns})
       .map((x, columnNumber) => {
         return (
-          <div className="cell header" key={`col-${columnNumber}`}>
-            Column {columnNumber}
+          <div
+            className="cell header"
+            key={`col-${columnNumber}`} >
+              Column {columnNumber}
           </div>
         );
       }));
@@ -54,8 +62,7 @@ Sheet = React.createClass({
           col={col}
           selected={this.state.selectedCell === key}
           setSelection={this.setSelection}
-          clearSelection={this.clearSelection}
-        />
+          clearSelection={this.clearSelection} />
       );
     });
   },

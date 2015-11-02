@@ -25,7 +25,7 @@ CellFormula = React.createClass({
 
   submitFormula () {
     const text = React.findDOMNode(this.refs.textInput).value.trim();
-    console.log('submit', text)
+    // console.log('submit', text)
     this.props.updateFormula(text);
   },
 

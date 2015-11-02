@@ -1,5 +1,3 @@
-const EMPTY_CELL = <span>&nbsp;</span>;
-
 Cell = React.createClass({
   mixins: [ReactMeteorData],
 
@@ -20,7 +18,10 @@ Cell = React.createClass({
     let result = text || this.data.text || "";
 
     // Exit if cell is empty
-    if (result.trim() === "") return EMPTY_CELL;
+    if (result.trim() === "") {
+      this.updateResult(null);
+      return;
+    }
 
     // These expressions cause infinite recursion
     const top = "top";
@@ -51,11 +52,11 @@ Cell = React.createClass({
       // console.log("eval error")
     }
     // if the cell is empty, put in a space so it formats correctly
-    if (result === undefined ||
-        result === null ||
-        result === "") {
-      result = EMPTY_CELL;
-    }
+    // if (result === undefined ||
+    //     result === null ||
+    //     result === "") {
+    //   result = EMPTY_CELL;
+    // }
     if (typeof result === "function" ) {
       // must be a function that threw an error, so let's display the text
       result = text || this.data.text;
@@ -114,7 +115,7 @@ Cell = React.createClass({
         />
       : <CellResult
           text={this.data.text}
-          result={this.data.result || EMPTY_CELL}
+          result={this.data.result}
           showFormula={this.showFormula}
         />;
   }

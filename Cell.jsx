@@ -1,3 +1,15 @@
+// The cell is responsible for its own data and communicates directly
+// with minimongo. All Tracker-based reactivity is housed here.
+// We let minimongo drive cell recalculations by caching cell
+// calculations in the `results` field and querying them in an
+// autorun (one per cell) which allows arbitrary relationships between
+// cells as specified in user cell code.
+
+// User code is eval'd. This a risk to the user if they trust someone
+// else's code, and the user can probably break the app. On the other
+// hand, the JS environment and syntax is all there for free. This
+// seems like a great place to try a membrane with ES2015's proxy.
+
 Cell = React.createClass({
   mixins: [ReactMeteorData],
 
@@ -35,7 +47,7 @@ Cell = React.createClass({
       // Querying the cell data will link Tracker for reactive updates.
       // Limit to the result field to `result` to keep Tracker invalidations
       // from  reacting to formula changing.
-      const cellData = Cells.findOne({row, col}, {fields: {'result':1}});
+      const cellData = Cells.findOne({row, col}, {fields: {"result": 1}});
       return cellData && cellData.result;
     };
 
@@ -51,17 +63,12 @@ Cell = React.createClass({
     } catch (e) {
       // console.log("eval error")
     }
-    // if the cell is empty, put in a space so it formats correctly
-    // if (result === undefined ||
-    //     result === null ||
-    //     result === "") {
-    //   result = EMPTY_CELL;
-    // }
     if (typeof result === "function" ) {
       // must be a function that threw an error, so let's display the text
       result = text || this.data.text;
     }
-    this.updateResult(result);
+    result = result.toString();
+    this.updateResult(result.toString());
     return result;
   },
 
@@ -83,9 +90,9 @@ Cell = React.createClass({
     // Don't update the result if it hasn't changed. Besides
     // being obvious, failure to do this creates a race condition
     // with the data mixin on load, especially refresh.
-    if (result !== this.data.result) {
+    // if (result !== this.data.result) {
       Cells.update(this.data._id, {$set: {result}});
-    }
+    // }
   },
 
   componentWillMount () {
@@ -115,6 +122,8 @@ Cell = React.createClass({
         />
       : <CellResult
           text={this.data.text}
+          // Render result toString in case something resolves to Object,
+          // breaking the app.
           result={this.data.result}
           showFormula={this.showFormula}
         />;

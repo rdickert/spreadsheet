@@ -6,7 +6,7 @@ CellFormula = React.createClass({
   },
 
   handleCellInput () {
-    const text = React.findDOMNode(this.refs.textInput).value;
+    const text = ReactDOM.findDOMNode(this.refs.textInput).value;
     this.setState({cellText: text});
   },
 
@@ -24,14 +24,14 @@ CellFormula = React.createClass({
   },
 
   submitFormula () {
-    const text = React.findDOMNode(this.refs.textInput).value.trim();
+    const text = ReactDOM.findDOMNode(this.refs.textInput).value.trim();
     // console.log('submit', text)
     this.props.updateFormula(text);
   },
 
   componentDidMount () {
     this.refs.textInput &&
-      React.findDOMNode(this.refs.textInput).focus();
+      ReactDOM.findDOMNode(this.refs.textInput).focus();
       // XXX need to get cursor to place correctly ($.setSelection?())
   },
 

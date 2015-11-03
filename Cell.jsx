@@ -48,6 +48,7 @@ Cell = React.createClass({
       // Limit to the result field to `result` to keep Tracker invalidations
       // from  reacting to formula changing.
       const cellData = Cells.findOne({row, col}, {fields: {"result": 1}});
+      this.isReactive = true;
       return cellData && cellData.result;
     };
 
@@ -68,7 +69,7 @@ Cell = React.createClass({
       result = text || this.data.text;
     }
     result = result.toString();
-    this.updateResult(result.toString());
+    this.updateResult(result.toString(), ! this.isReactive);
     return result;
   },
 
@@ -86,23 +87,28 @@ Cell = React.createClass({
     this.props.clearSelection();
   },
 
-  updateResult (result) {
+  updateResult (result, isNotReactive) {
     // Don't update the result if it hasn't changed. Besides
     // being obvious, failure to do this creates a race condition
     // with the data mixin on load, especially refresh.
-    // if (result !== this.data.result) {
-      Cells.update(this.data._id, {$set: {result}});
-    // }
+    if (result !== this.data.result) {
+      Cells.update(this.data._id, {$set: {result, isNotReactive}});
+    }
   },
 
   componentWillMount () {
-    this.computation = Tracker.autorun( (computation) => {
-      this.calculate();
-    });
+    // isNotReactive memoizes when the formula doesn't contain any
+    // reactive code - skip to execute faster.
+    if (! this.isNotReactive) {
+      this.computation = Tracker.autorun( () => {
+        // avoid calculate if cell was previously eval'd & found no reactivity
+        this.calculate();
+      });
+    }
   },
 
   componentWillUnmount () {
-    this.computation.stop();
+    this.computation && this.computation.stop();
   },
 
   shouldComponentUpdate (nextProps, nextState) {

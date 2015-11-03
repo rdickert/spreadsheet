@@ -68,8 +68,7 @@ Cell = React.createClass({
       // must be a function that threw an error, so let's display the text
       result = text || this.data.text;
     }
-    result = result.toString();
-    this.updateResult(result.toString(), ! this.isReactive);
+    this.updateResult(result, ! this.isReactive);
     return result;
   },
 

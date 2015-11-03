@@ -5,11 +5,11 @@ Sheet = React.createClass({
   mixins: [ReactMeteorData],
 
   getMeteorData() {
-    if (! Cells.findOne()){
+    if (! Cells.findOne()) {
       return {
         totalColumns: 20,
         totalRows: 20
-      }
+      };
     }
     const totalRows =
       Cells.findOne({}, {sort: {row: -1}, limit: 1}).row + 1;
@@ -50,7 +50,8 @@ Sheet = React.createClass({
               Column {col}
           </div>
         );
-      }));
+      })
+    );
   },
 
   renderCells(row) {
@@ -82,7 +83,8 @@ Sheet = React.createClass({
             {this.renderCells(row)}
           </div>
         );
-      }));
+      })
+    );
   },
 
   render() {

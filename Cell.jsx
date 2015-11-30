@@ -14,9 +14,7 @@ Cell = React.createClass({
   mixins: [ReactMeteorData],
 
   getMeteorData() {
-    return Cells.findOne(
-      {col: this.props.col, row: this.props.row}
-    );
+    return this.props.cellId && Cells.findOne(this.props.cellId);
   },
 
   propTypes: {

@@ -11,11 +11,6 @@
 // seems like a great place to try a membrane with ES2015's proxy.
 
 Cell = React.createClass({
-  mixins: [ReactMeteorData],
-
-  getMeteorData() {
-    return this.props.cellId && Cells.findOne(this.props.cellId);
-  },
 
   propTypes: {
     // cell: React.PropTypes.object.isRequired
@@ -25,7 +20,7 @@ Cell = React.createClass({
     // Try to run the cell as a js expression, and call it if
     // it evaluates to a function.
 
-    let result = text || this.data.text || "";
+    let result = text || this.props.cell.text || "";
 
     // Exit if cell is empty
     if (result.trim() === "") {
@@ -38,8 +33,8 @@ Cell = React.createClass({
     const window = "window";
 
     // create cell() to reference cells in the spreadsheet
-    const cell = (row, col) => {
-      if (row===this.data.row && col === this.data.col){
+    const cell = (col, row) => {
+      if (row===this.props.cell.row && col === this.props.cell.col){
         throw Meteor.Error("cell can't refer to itself.");
       }
       // Querying the cell data will link Tracker for reactive updates.
@@ -64,22 +59,44 @@ Cell = React.createClass({
     }
     if (typeof result === "function" ) {
       // must be a function that threw an error, so let's display the text
-      result = text || this.data.text;
+      result = text || this.props.cell.text;
     }
     this.updateResult(result, ! this.isReactive);
     return result;
   },
 
   showFormula (event) {
-    this.props.setSelection(this.data);
+    this.props.setSelection(this.props.cell);
     event.stopPropagation();
   },
 
   updateFormula (text) {
-    // move to method
-    if (text !== this.data.text) {
-      Cells.update(this.data._id, {$set: {text}});
-      this.computation.invalidate();
+    // XXX move to method
+    text = text.trim();
+    if (text !== this.props.cell.text) {
+      if (this.props.cell._id){
+        if (text) {
+          Cells.update(this.props.cell._id, {$set: {text}});
+          this.computation.invalidate();
+        } else {
+          Cells.remove(this.props.cell._id);
+        }
+      } else {
+        let result;
+        if (text) {
+          // XXX autorun should move...to this.calculate()?
+          this.computation = Tracker.autorun( () => {
+            result = this.calculate(text);
+          });
+          Cells.insert({
+            col: this.props.cell.col,
+            row: this.props.cell.row,
+            text: text,
+            result: result,
+            isNotReactive: ! this.isReactive
+          });
+        }
+      }
     }
     this.props.clearSelection();
   },
@@ -88,8 +105,8 @@ Cell = React.createClass({
     // Don't update the result if it hasn't changed. Besides
     // being obvious, failure to do this creates a race condition
     // with the data mixin on load, especially refresh.
-    if (result !== this.data.result) {
-      Cells.update(this.data._id, {$set: {result, isNotReactive}});
+    if (result !== this.props.cell.result) {
+      Cells.update(this.props.cell._id, {$set: {result, isNotReactive}});
     }
   },
 
@@ -111,23 +128,21 @@ Cell = React.createClass({
   shouldComponentUpdate (nextProps, nextState) {
     return ! (
       this.props.selected === nextProps.selected &&
+      this.props.cell.result === nextProps.cell.result &&
+      this.props.cell._id === nextProps.cell._id &&
       this.state === nextState
     );
   },
 
   render() {
-    // if (this.data.isInvalid) this.calculate();
     return this.props.selected
       ? <CellFormula
-          text={this.data.text}
+          text={this.props.cell.text}
           updateFormula={this.updateFormula}
           clearSelection={this.props.clearSelection}
         />
       : <CellResult
-          text={this.data.text}
-          // Render result toString in case something resolves to Object,
-          // breaking the app.
-          result={this.data.result}
+          result={this.props.cell.result}
           showFormula={this.showFormula}
         />;
   }

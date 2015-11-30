@@ -1,6 +1,3 @@
-// The sheet scaffolds all the cells and manages cell selection state,
-// but is otherwise ignorant of cell-level goings-on
-
 // XXX probably belongs in a Sheets collection.
 const columns = 10;
 const rows = 10;
@@ -34,21 +31,8 @@ Sheet = React.createClass({
   mixins: [ReactMeteorData],
 
   getMeteorData() {
-    if (! Cells.findOne()) {
-      return {
-        totalColumns: 20,
-        totalRows: 20
-      };
-    }
-    const totalRows = rows;
-      //Cells.findOne({}, {sort: {row: -1}, limit: 1}).row + 1;
-    const totalColumns = columns;
-      //Cells.findOne({}, {sort: {col: -1}, limit: 1}).col + 1;
-    cells = Cells.find({}, {sort: {row: 1, col: 1}}).fetch();
     return {
-      totalColumns,
-      totalRows,
-      cells
+      cells: Cells.find({}, {sort: {row: 1, col: 1}}).fetch()
     };
   },
   propTypes: {
@@ -76,7 +60,11 @@ Sheet = React.createClass({
 
         {/* Render column headers */}
         <div className="row header">
-          <div className="cell header" ref="originCell">&nbsp;</div>
+          <div className="cell header" ref="originCell">
+            {/* probably remove this stat later */}
+            {this.data.cells.length} cells
+            &nbsp;
+          </div>
           {Array.from({length: columns}).map((x, col) => {
               return (
                 <div
@@ -104,9 +92,6 @@ Sheet = React.createClass({
                   return (
                     <Cell
                       key={key}
-                      row={cell.row}
-                      col={cell.col}
-                      cellId={cell._id}
                       cell={cell}
                       selected={this.state.selectedCell === key}
                       setSelection={this.setSelection}

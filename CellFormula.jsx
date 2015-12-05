@@ -1,13 +1,13 @@
 CellFormula = React.createClass({
   getInitialState () {
     return {
-      cellText: this.props.text
+      cellFormula: this.props.formula
     };
   },
 
   handleCellInput () {
     const text = ReactDOM.findDOMNode(this.refs.textInput).value;
-    this.setState({cellText: text});
+    this.setState({cellFormula: text});
   },
 
   handleInputKeyUp (event) {
@@ -25,7 +25,6 @@ CellFormula = React.createClass({
 
   submitFormula () {
     const text = ReactDOM.findDOMNode(this.refs.textInput).value.trim();
-    // console.log('submit', text)
     this.props.updateFormula(text);
   },
 
@@ -42,7 +41,7 @@ CellFormula = React.createClass({
           type="text"
           className="textInput"
           ref="textInput"
-          value={this.state.cellText}
+          value={this.state.cellFormula}
           onChange={this.handleCellInput}
           onBlur={this.submitFormula}
           onKeyUp={this.handleInputKeyUp}

@@ -1,14 +1,16 @@
-// The cell is responsible for its own data and communicates directly
-// with minimongo. All Tracker-based reactivity is housed here.
+// Tracker-based reactivity is run here.
 // We let minimongo drive cell recalculations by caching cell
 // calculations in the `results` field and querying them in an
 // autorun (one per cell) which allows arbitrary relationships between
 // cells as specified in user cell code.
 
-// User code is eval'd. This a risk to the user if they trust someone
+// XXX NOT FOR PRODUCTION USE
+// User code is `eval`ed. This a risk to the user if they trust someone
 // else's code, and the user can probably break the app. On the other
-// hand, the JS environment and syntax is all there for free. This
-// seems like a great place to try a membrane with ES2015's proxy.
+// hand, the JS environment and syntax is all there for free. If we put
+// functions in the closure with the eval (e.g. `cell()`), the user
+// can access that in their formula, and minimongo queries via `cell()`
+// or direclty in the cell formula will be reactive.
 
 Cell = React.createClass({
 
@@ -16,11 +18,11 @@ Cell = React.createClass({
     // cell: React.PropTypes.object.isRequired
   },
 
-  calculate (text) {
+  calculate (formula) {
     // Try to run the cell as a js expression, and call it if
     // it evaluates to a function.
 
-    let result = text || this.props.cell.text || "";
+    let result = formula || this.props.cell.formula || "";
 
     // Exit if cell is empty
     if (result.trim() === "") {
@@ -41,6 +43,9 @@ Cell = React.createClass({
       // Limit to the result field to `result` to keep Tracker invalidations
       // from  reacting to formula changing.
       const cellData = Cells.findOne({row, col}, {fields: {"result": 1}});
+      // XXX manually setting isReactive is brittle. User formulas might
+      // access reactive objects, but they wouldn't trigger this & might
+      // have mixed reactive behavior (worse that non-reactive).
       this.isReactive = true;
       return cellData && cellData.result;
     };
@@ -58,8 +63,9 @@ Cell = React.createClass({
       // console.log("eval error")
     }
     if (typeof result === "function" ) {
-      // must be a function that threw an error, so let's display the text
-      result = text || this.props.cell.text;
+      // must be a function that threw an error, so let's display the formula
+      // XXX 2nd order functions would display too. Maybe OK?
+      result = formula || this.props.cell.formula;
     }
     this.updateResult(result, ! this.isReactive);
     return result;
@@ -70,29 +76,38 @@ Cell = React.createClass({
     event.stopPropagation();
   },
 
-  updateFormula (text) {
-    // XXX move to method
-    text = text.trim();
-    if (text !== this.props.cell.text) {
+  updateFormula (formula) {
+    // XXX refactor & move to method
+    formula = formula.trim();
+    if (formula !== this.props.cell.formula) {
       if (this.props.cell._id){
-        if (text) {
-          Cells.update(this.props.cell._id, {$set: {text}});
-          this.computation.invalidate();
+        console.log(this.props);
+        if (formula) {
+          let result
+          this.computation.stop();
+          this.computation = Tracker.autorun( () => {
+            result = this.calculate(formula);
+          });
+          Cells.update(this.props.cell._id, {$set: {
+            formula,
+            result,
+            isNotReactive: ! this.isReactive
+          }});
         } else {
           Cells.remove(this.props.cell._id);
         }
       } else {
         let result;
-        if (text) {
+        if (formula) {
           // XXX autorun should move...to this.calculate()?
           this.computation = Tracker.autorun( () => {
-            result = this.calculate(text);
+            result = this.calculate(formula);
           });
           Cells.insert({
             col: this.props.cell.col,
             row: this.props.cell.row,
-            text: text,
-            result: result,
+            formula,
+            result,
             isNotReactive: ! this.isReactive
           });
         }
@@ -102,9 +117,6 @@ Cell = React.createClass({
   },
 
   updateResult (result, isNotReactive) {
-    // Don't update the result if it hasn't changed. Besides
-    // being obvious, failure to do this creates a race condition
-    // with the data mixin on load, especially refresh.
     if (result !== this.props.cell.result) {
       Cells.update(this.props.cell._id, {$set: {result, isNotReactive}});
     }
@@ -112,10 +124,10 @@ Cell = React.createClass({
 
   componentWillMount () {
     // isNotReactive memoizes when the formula doesn't contain any
-    // reactive code - skip to execute faster.
+    // reactive code - no need to rerun it when we start the app.
+    // XXX isNotReactive: premature optimization?
     if (! this.isNotReactive) {
       this.computation = Tracker.autorun( () => {
-        // avoid calculate if cell was previously eval'd & found no reactivity
         this.calculate();
       });
     }
@@ -137,7 +149,7 @@ Cell = React.createClass({
   render() {
     return this.props.selected
       ? <CellFormula
-          text={this.props.cell.text}
+          formula={this.props.cell.formula}
           updateFormula={this.updateFormula}
           clearSelection={this.props.clearSelection}
         />

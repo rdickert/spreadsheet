@@ -61,11 +61,11 @@ Sheet = React.createClass({
         {/* Render column headers */}
         <div className="row header">
           <div className="cell header" ref="originCell">
-            {/* probably remove this stat later */}
-            {this.data.cells.length} cells
-            &nbsp;
+            {/* This is the "cell" at the upper left of the grid */}
+            {/* XXX probably remove this stat later */}
+            {this.data.cells.length} saved cells
           </div>
-          {Array.from({length: columns}).map((x, col) => {
+          {R.range(0, columns).map((col) => {
               return (
                 <div
                   className="cell header"

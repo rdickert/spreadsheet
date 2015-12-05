@@ -81,7 +81,6 @@ Cell = React.createClass({
     formula = formula.trim();
     if (formula !== this.props.cell.formula) {
       if (this.props.cell._id){
-        console.log(this.props);
         if (formula) {
           let result
           this.computation.stop();

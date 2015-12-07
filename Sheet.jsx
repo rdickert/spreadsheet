@@ -26,6 +26,55 @@ const expandCells = function (columns, rows, sortedCells) {
   return R.range(0, rows).map(expandRow);
 };
 
+OriginCell = ({cellCount}) => (
+  // This is the cell at the upper left of the grid
+  // XXX probably remove cellCount stat later
+  <div className="cell head">
+    {cellCount} saved cells
+  </div>
+);
+
+ColumnHeadCell = ({col}) => (
+  <div className="cell head" >
+    Column {col}
+  </div>
+);
+
+RowHeadCell = ({rowNumber}) => (
+  <div className="cell head">
+    Row {rowNumber}
+  </div>
+);
+
+HeaderRow = ({columns, cells}) => (
+  <div className="row head">
+    <OriginCell key="origin cell" cellCount={cells.length} />
+    {R.range(0, columns)
+      .map((col) => <ColumnHeadCell key={col} col={col} />)
+    }
+  </div>
+);
+
+CellRow = ({rowNumber, cells, selectedCell, ...props}) => (
+  <div className="row">
+
+    <RowHeadCell
+      key={`rowHeadFor-${rowNumber}`}
+      rowNumber={rowNumber} />
+
+    {cells.map((cell) => {
+      const key = `cell (${cell.col}, ${cell.row})`;
+      return (
+        <Cell
+          key={key}
+          cell={cell}
+          selected={selectedCell === key}
+          {...props} />
+      );
+    })}
+
+  </div> // .row
+);
 
 Sheet = React.createClass({
   mixins: [ReactMeteorData],
@@ -58,50 +107,21 @@ Sheet = React.createClass({
     return (
       <div className="spreadsheet">
 
-        {/* Render column headers */}
-        <div className="row header">
-          <div className="cell header" ref="originCell">
-            {/* This is the "cell" at the upper left of the grid */}
-            {/* XXX probably remove this stat later */}
-            {this.data.cells.length} saved cells
-          </div>
-          {R.range(0, columns).map((col) => {
-              return (
-                <div
-                  className="cell header"
-                  key={`col-${col}`} >
-                    Column {col}
-                </div>
-              );
-            })
-          }
-        </div>
+        <HeaderRow
+          columns={columns}
+          cells={this.data.cells} />
 
-        {/* Render rows */}
         {expandCells(columns, rows, this.data.cells)
-          .map((row, rowIndex) => {
-            return (
-              <div className="row" key={`row-${rowIndex}`}>
-                <div className="cell header" key={`rowHeadFor-${row}`}>
-                  Row {rowIndex}
-                </div>
-
-                {/* Render cells for this row */}
-                {row.map((cell) => {
-                  const key = `cell (${cell.col}, ${cell.row})`;
-                  return (
-                    <Cell
-                      key={key}
-                      cell={cell}
-                      selected={this.state.selectedCell === key}
-                      setSelection={this.setSelection}
-                      clearSelection={this.clearSelection} />
-                  );
-                })}
-
-              </div> // .row
-            );
-          })
+          .map((cells, rowNumber) => (
+              <CellRow
+                key={`Row ${rowNumber}`}
+                rowNumber={rowNumber}
+                cells={cells}
+                selectedCell={this.state.selectedCell}
+                setSelection={this.setSelection}
+                clearSelection={this.clearSelection} />
+            )
+          )
         }
 
       </div> // .spreadsheet

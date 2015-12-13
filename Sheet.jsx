@@ -2,8 +2,8 @@
 const columns = 10;
 const rows = 10;
 
-const expandCells = function (columns, rows, sortedCells) {
-  // Expand a sparse array of cells into a columns x rows grid,
+const expandToRows = function (columns, rows, sortedCells) {
+  // Expand a sparse array of cells into a (columns x rows) grid,
   // adding empty cells to fill in the gaps.
   // Cells must be sorted by row then column. This allows
   // us to insert the sparse data in one pass.
@@ -49,31 +49,11 @@ RowHeadCell = ({rowNumber}) => (
 HeaderRow = ({columns, cells}) => (
   <div className="row head">
     <OriginCell key="origin cell" cellCount={cells.length} />
+
     {R.range(0, columns)
-      .map((col) => <ColumnHeadCell key={col} col={col} />)
+      .map((col) => <ColumnHeadCell key={`column-${col}`} col={col} />)
     }
   </div>
-);
-
-CellRow = ({rowNumber, cells, selectedCell, ...props}) => (
-  <div className="row">
-
-    <RowHeadCell
-      key={`rowHeadFor-${rowNumber}`}
-      rowNumber={rowNumber} />
-
-    {cells.map((cell) => {
-      const key = `cell (${cell.col}, ${cell.row})`;
-      return (
-        <Cell
-          key={key}
-          cell={cell}
-          selected={selectedCell === key}
-          {...props} />
-      );
-    })}
-
-  </div> // .row
 );
 
 Sheet = React.createClass({
@@ -103,7 +83,33 @@ Sheet = React.createClass({
     this.setState({selectedCell: ""});
   },
 
-  render() {
+  renderCell (cell) {
+    const key = `cell (${cell.col}, ${cell.row})`;
+    return (
+      <Cell
+        key={key}
+        cell={cell}
+        selected={this.state.selectedCell === key}
+        setSelection={this.setSelection}
+        clearSelection={this.clearSelection} />
+    );
+  },
+
+  renderRow (cells, rowNumber) {
+    return (
+      <div className="row" key={`row-${rowNumber}`}>
+
+        <RowHeadCell
+          key={`rowHeadFor-${rowNumber}`}
+          rowNumber={rowNumber} />
+
+        {cells.map(this.renderCell)}
+
+      </div> // .row
+    );
+  },
+
+  render () {
     return (
       <div className="spreadsheet">
 
@@ -111,20 +117,9 @@ Sheet = React.createClass({
           columns={columns}
           cells={this.data.cells} />
 
-        {expandCells(columns, rows, this.data.cells)
-          .map((cells, rowNumber) => (
-              <CellRow
-                key={`Row ${rowNumber}`}
-                rowNumber={rowNumber}
-                cells={cells}
-                selectedCell={this.state.selectedCell}
-                setSelection={this.setSelection}
-                clearSelection={this.clearSelection} />
-            )
-          )
-        }
+        {expandToRows(columns, rows, this.data.cells).map(this.renderRow)}
 
-      </div> // .spreadsheet
+      </div>
     );
   }
 });
